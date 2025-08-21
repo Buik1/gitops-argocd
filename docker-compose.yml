@@ -1,0 +1,43 @@
+services:
+  # Sample application v1
+  app-v1:
+    image: nginx:1.21-alpine
+    container_name: gitops-app-v1
+    ports:
+      - "8080:80"
+    volumes:
+      - ./web-content/v1:/usr/share/nginx/html:ro
+    environment:
+      - VERSION=v1.0.0
+    networks:
+      - gitops
+
+  # Sample application v2 (for GitOps demo)
+  app-v2:
+    image: nginx:1.22-alpine
+    container_name: gitops-app-v2
+    ports:
+      - "8081:80"
+    volumes:
+      - ./web-content/v2:/usr/share/nginx/html:ro
+    environment:
+      - VERSION=v2.0.0
+    networks:
+      - gitops
+    profiles:
+      - v2
+
+  # GitOps simulation dashboard
+  gitops-dashboard:
+    build: ./dashboard
+    container_name: gitops-dashboard
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+    networks:
+      - gitops
+
+networks:
+  gitops:
+    driver: bridge
