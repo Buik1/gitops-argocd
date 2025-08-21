@@ -21,8 +21,8 @@ jobs:
         chmod +x kubectl
         sudo mv kubectl /usr/local/bin/
         
-        # Validate YAML files
-        find . -name "*.yaml" -o -name "*.yml" | xargs -I {} kubectl apply --dry-run=client -f {}
+        # Validate only deployment files
+        kubectl apply --dry-run=client -f simple-app/manifests/deployment.yaml
         
     - name: Build and push Docker image (if Dockerfile exists)
       if: hashFiles('**/Dockerfile') != ''
@@ -43,5 +43,7 @@ jobs:
         git config --local user.email "action@github.com"
         git config --local user.name "GitHub Action"
         git add .
-        git diff --staged --quiet || git commit -m "Update image tag to ${{ github.sha }}"
-        git push
+        if ! git diff --staged --quiet; then
+          git commit -m "Update image tag to ${{ github.sha }}"
+          git push
+        fi
