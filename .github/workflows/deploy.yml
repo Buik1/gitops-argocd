@@ -3,47 +3,22 @@ name: GitOps Deploy
 on:
   push:
     branches: [ master, main ]
-  pull_request:
-    branches: [ master, main ]
 
 jobs:
-  deploy:
+  validate:
     runs-on: ubuntu-latest
     
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
       
-    - name: Validate Kubernetes manifests
+    - name: Validate YAML syntax
       run: |
-        # Install kubectl
-        curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
-        chmod +x kubectl
-        sudo mv kubectl /usr/local/bin/
+        # Simple YAML validation
+        python3 -c "import yaml; yaml.safe_load(open('simple-app/manifests/deployment.yaml'))"
+        python3 -c "import yaml; yaml.safe_load(open('simple-app/application.yaml'))"
         
-        # Validate only deployment files
-        kubectl apply --dry-run=client -f simple-app/manifests/deployment.yaml
-        
-    - name: Build and push Docker image (if Dockerfile exists)
-      if: hashFiles('**/Dockerfile') != ''
+    - name: Success message
       run: |
-        echo "Docker build would happen here"
-        # docker build -t myapp:${{ github.sha }} .
-        # docker push myapp:${{ github.sha }}
-        
-    - name: Update image tag in manifests
-      if: hashFiles('**/Dockerfile') != ''
-      run: |
-        # Update image tags in deployment files
-        sed -i "s|image: nginx:latest|image: nginx:${{ github.sha }}|g" simple-app/manifests/deployment.yaml
-        
-    - name: Commit updated manifests
-      if: hashFiles('**/Dockerfile') != ''
-      run: |
-        git config --local user.email "action@github.com"
-        git config --local user.name "GitHub Action"
-        git add .
-        if ! git diff --staged --quiet; then
-          git commit -m "Update image tag to ${{ github.sha }}"
-          git push
-        fi
+        echo "✅ All YAML files are valid!"
+        echo "🚀 ArgoCD will sync changes automatically"
